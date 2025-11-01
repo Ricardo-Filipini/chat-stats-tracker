@@ -1,5 +1,4 @@
-import { useState, useMemo } from 'react';
-import { FileUpload } from '@/components/FileUpload';
+import { useState, useMemo, useEffect } from 'react';
 import { StatsCard } from '@/components/StatsCard';
 import { RankingCard } from '@/components/RankingCard';
 import { HourlyChart } from '@/components/HourlyChart';
@@ -11,6 +10,20 @@ import { MessageSquare, Users, Clock, TrendingUp } from 'lucide-react';
 
 const Index = () => {
   const [fileContent, setFileContent] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/Conversa.txt')
+      .then(response => response.text())
+      .then(content => {
+        setFileContent(content);
+        setIsLoading(false);
+      })
+      .catch(error => {
+        console.error('Erro ao carregar arquivo:', error);
+        setIsLoading(false);
+      });
+  }, []);
 
   const stats = useMemo(() => {
     if (!fileContent) return null;
@@ -79,25 +92,7 @@ const Index = () => {
       }));
   }, [stats]);
 
-  if (!fileContent) {
-    return (
-      <div className="min-h-screen bg-background p-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold mb-4 bg-gradient-primary bg-clip-text text-transparent">
-              WhatsApp Group Analytics
-            </h1>
-            <p className="text-xl text-muted-foreground">
-              Descubra os segredos do seu grupo
-            </p>
-          </div>
-          <FileUpload onFileLoad={setFileContent} />
-        </div>
-      </div>
-    );
-  }
-
-  if (!stats) {
+  if (isLoading || !stats) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
