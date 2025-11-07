@@ -5,35 +5,54 @@ import { HourlyChart } from '@/components/HourlyChart';
 import { DailyChart } from '@/components/DailyChart';
 import { BusiestDay } from '@/components/BusiestDay';
 import { FunnyMoments } from '@/components/FunnyMoments';
-import { parseWhatsAppChat, calculateStats, extractFunnyMoments } from '@/utils/whatsappParser';
+import { DateFilter } from '@/components/DateFilter';
+import { parseWhatsAppChat, calculateStats, extractFunnyMoments, Message } from '@/utils/whatsappParser';
 import { MessageSquare, Users, Clock, TrendingUp } from 'lucide-react';
 
 const Index = () => {
-  const [fileContent, setFileContent] = useState<string | null>(null);
+  const [fileContent, setFileContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const [dateFilter, setDateFilter] = useState<'all' | 'currentMonth'>('all');
 
   useEffect(() => {
-    fetch('/Conversa.txt')
-      .then(response => response.text())
-      .then(content => {
-        setFileContent(content);
+    Promise.all([
+      fetch('/Conversa.txt').then(res => res.text()),
+      fetch('/Conversa2.txt').then(res => res.text()).catch(() => '')
+    ])
+      .then(([content1, content2]) => {
+        setFileContent(content1 + '\n' + content2);
         setIsLoading(false);
       })
       .catch(error => {
-        console.error('Erro ao carregar arquivo:', error);
+        console.error('Erro ao carregar arquivos:', error);
         setIsLoading(false);
       });
   }, []);
 
+  const filterMessagesByDate = (messages: Message[]): Message[] => {
+    if (dateFilter === 'all') return messages;
+    
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    return messages.filter(msg => {
+      const msgMonth = msg.date.getMonth();
+      const msgYear = msg.date.getFullYear();
+      return msgMonth === currentMonth && msgYear === currentYear;
+    });
+  };
+
   const stats = useMemo(() => {
     if (!fileContent) return null;
-    const messages = parseWhatsAppChat(fileContent);
+    const allMessages = parseWhatsAppChat(fileContent);
+    const filteredMessages = filterMessagesByDate(allMessages);
     return {
-      messages,
-      stats: calculateStats(messages),
-      funnyMoments: extractFunnyMoments(messages),
+      messages: filteredMessages,
+      stats: calculateStats(filteredMessages),
+      funnyMoments: extractFunnyMoments(filteredMessages),
     };
-  }, [fileContent]);
+  }, [fileContent, dateFilter]);
 
   const mostActiveRanking = useMemo(() => {
     if (!stats) return [];
@@ -110,7 +129,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <header className="text-center mb-12">
+        <header className="text-center mb-8">
           <h1 className="text-5xl font-bold mb-4 bg-gradient-primary bg-clip-text text-transparent animate-pulse">
             WhatsApp Group Analytics
           </h1>
@@ -118,6 +137,13 @@ const Index = () => {
             Análise completa das conversas do grupo
           </p>
         </header>
+
+        <div className="mb-8 flex justify-center">
+          <DateFilter 
+            onFilterChange={setDateFilter}
+            currentFilter={dateFilter}
+          />
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatsCard
