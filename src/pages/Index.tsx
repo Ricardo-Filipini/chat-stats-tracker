@@ -6,6 +6,7 @@ import { DailyChart } from '@/components/DailyChart';
 import { BusiestDay } from '@/components/BusiestDay';
 import { FunnyMoments } from '@/components/FunnyMoments';
 import { DateFilter } from '@/components/DateFilter';
+import { UserFilter } from '@/components/UserFilter';
 import { parseWhatsAppChat, calculateStats, extractFunnyMoments, Message } from '@/utils/whatsappParser';
 import { MessageSquare, Users, Clock, TrendingUp } from 'lucide-react';
 
@@ -13,6 +14,7 @@ const Index = () => {
   const [fileContent, setFileContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [dateFilter, setDateFilter] = useState<'all' | 'currentMonth'>('all');
+  const [userFilter, setUserFilter] = useState<string>('all');
 
   useEffect(() => {
     Promise.all([
@@ -29,30 +31,50 @@ const Index = () => {
       });
   }, []);
 
-  const filterMessagesByDate = (messages: Message[]): Message[] => {
-    if (dateFilter === 'all') return messages;
+  const filterMessages = (messages: Message[]): Message[] => {
+    let filtered = messages;
     
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    // Filter by date
+    if (dateFilter === 'currentMonth') {
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      
+      filtered = filtered.filter(msg => {
+        const msgMonth = msg.date.getMonth();
+        const msgYear = msg.date.getFullYear();
+        return msgMonth === currentMonth && msgYear === currentYear;
+      });
+    }
     
-    return messages.filter(msg => {
-      const msgMonth = msg.date.getMonth();
-      const msgYear = msg.date.getFullYear();
-      return msgMonth === currentMonth && msgYear === currentYear;
-    });
+    // Filter by user
+    if (userFilter !== 'all') {
+      filtered = filtered.filter(msg => msg.sender === userFilter);
+    }
+    
+    return filtered;
   };
+
+  const allMessages = useMemo(() => {
+    if (!fileContent) return [];
+    return parseWhatsAppChat(fileContent);
+  }, [fileContent]);
+
+  const availableUsers = useMemo(() => {
+    const users = new Set<string>();
+    allMessages.forEach(msg => users.add(msg.sender));
+    return Array.from(users).sort();
+  }, [allMessages]);
 
   const stats = useMemo(() => {
     if (!fileContent) return null;
-    const allMessages = parseWhatsAppChat(fileContent);
-    const filteredMessages = filterMessagesByDate(allMessages);
+    const filteredMessages = filterMessages(allMessages);
     return {
       messages: filteredMessages,
       stats: calculateStats(filteredMessages),
       funnyMoments: extractFunnyMoments(filteredMessages),
     };
-  }, [fileContent, dateFilter]);
+  }, [fileContent, dateFilter, userFilter, allMessages]);
 
   const mostActiveRanking = useMemo(() => {
     if (!stats) return [];
@@ -138,10 +160,15 @@ const Index = () => {
           </p>
         </header>
 
-        <div className="mb-8 flex justify-center">
+        <div className="mb-8 flex flex-col sm:flex-row justify-center gap-4">
           <DateFilter 
             onFilterChange={setDateFilter}
             currentFilter={dateFilter}
+          />
+          <UserFilter 
+            users={availableUsers}
+            onFilterChange={setUserFilter}
+            currentFilter={userFilter}
           />
         </div>
 
