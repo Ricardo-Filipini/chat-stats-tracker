@@ -7,7 +7,7 @@ import { BusiestDay } from '@/components/BusiestDay';
 import { FunnyMoments } from '@/components/FunnyMoments';
 import { DateFilter } from '@/components/DateFilter';
 import { UserFilter } from '@/components/UserFilter';
-import { RaceChart } from '@/components/RaceChart';
+import { WordCloud } from '@/components/WordCloud';
 import { parseWhatsAppChat, calculateStats, extractFunnyMoments, Message } from '@/utils/whatsappParser';
 import { MessageSquare, Users, Clock, TrendingUp } from 'lucide-react';
 
@@ -77,6 +77,26 @@ const Index = () => {
     };
   }, [fileContent, dateFilter, userFilter, allMessages]);
 
+  // Períodos disponíveis para a Nuvem de Palavras
+  const wordPeriods = useMemo(() => {
+    const msgs = stats?.messages ?? [];
+    const set = new Set<string>();
+    msgs.forEach((m) => {
+      const y = m.date.getFullYear();
+      const mm = String(m.date.getMonth() + 1).padStart(2, '0');
+      const dd = String(m.date.getDate()).padStart(2, '0');
+      const key = dateFilter === 'all' ? `${y}-${mm}` : `${y}-${mm}-${dd}`;
+      set.add(key);
+    });
+    return Array.from(set).sort();
+  }, [stats, dateFilter]);
+
+  const [wordRange, setWordRange] = useState<[number, number]>([0, 0]);
+  useEffect(() => {
+    const maxIndex = Math.max(0, wordPeriods.length - 1);
+    setWordRange([0, maxIndex]);
+  }, [wordPeriods.length, dateFilter, userFilter]);
+
   const mostActiveRanking = useMemo(() => {
     if (!stats) return [];
     return Object.entries(stats.stats.messagesPerPerson)
@@ -98,7 +118,7 @@ const Index = () => {
         position: idx + 1,
         name,
         value: record.count,
-        subtitle: new Date(record.date).toLocaleDateString('pt-BR'),
+        subtitle: record.date.split('-').reverse().join('/'),
       }));
   }, [stats]);
 
@@ -111,7 +131,7 @@ const Index = () => {
         position: idx + 1,
         name,
         value: record.count,
-        subtitle: `${new Date(record.date).toLocaleDateString('pt-BR')} às ${record.hour}h`,
+        subtitle: `${record.date.split('-').reverse().join('/')} às ${record.hour}h`,
       }));
   }, [stats]);
 
@@ -126,12 +146,15 @@ const Index = () => {
   const dailyChartData = useMemo(() => {
     if (!stats) return [];
     return Object.entries(stats.stats.messagesPerDay)
-      .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
+      .sort(([a], [b]) => a.localeCompare(b))
       .slice(-30)
-      .map(([date, count]) => ({
-        date: new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
-        messages: count,
-      }));
+      .map(([date, count]) => {
+        const [y, m, d] = date.split('-');
+        return {
+          date: `${d}/${m}`,
+          messages: count,
+        };
+      });
   }, [stats]);
 
   if (isLoading || !stats) {
@@ -165,6 +188,9 @@ const Index = () => {
           <DateFilter 
             onFilterChange={setDateFilter}
             currentFilter={dateFilter}
+            periods={wordPeriods}
+            range={wordRange}
+            onRangeChange={setWordRange}
           />
           <UserFilter 
             users={availableUsers}
@@ -229,7 +255,7 @@ const Index = () => {
         </div>
 
         <div className="mb-8">
-          <RaceChart messages={stats.messages} filterType={dateFilter} />
+          <WordCloud messages={stats.messages} filterType={dateFilter} periods={wordPeriods} range={wordRange} />
         </div>
       </div>
     </div>
