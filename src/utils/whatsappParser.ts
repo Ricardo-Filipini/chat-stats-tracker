@@ -197,47 +197,55 @@ export function parseWhatsAppChat(content: string): Message[] {
   const messages: Message[] = [];
   const lines = content.split('\n');
   
-  // Regex para formato WhatsApp: DD/MM/YYYY HH:MM - Sender: Content
-  // Aceita formatos como: 11/11/2025 06:48 - +55... ou 11/11/2025 06:48 - Nome:
-  const messageRegex = /^(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2}(?::\d{2})?)\s*-\s*([^:]+):\s*(.*)$/;
+  // Padrões aceitos:
+  // 1) 11/11/2025 06:48 - Nome: Mensagem
+  // 2) [11/11/2025, 06:48] Nome: Mensagem
+  const patternA = /^(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2}(?::\d{2})?)\s*-\s*([^:]+):\s*(.*)$/;
+  const patternB = /^\[(\d{1,2}\/\d{1,2}\/\d{2,4}),?\s+(\d{1,2}:\d{2}(?::\d{2})?)\]\s*([^:]+):\s*(.*)$/;
   
   let currentMessage: Message | null = null;
   
-  for (const line of lines) {
-    const trimmedLine = line.trim();
-    if (!trimmedLine) continue;
-    
-    const match = trimmedLine.match(messageRegex);
-    
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+
+    let match = line.match(patternA);
+    let format: 'A' | 'B' | null = null;
+
     if (match) {
-      // Se tinha uma mensagem anterior, salva ela
-      if (currentMessage) {
-        messages.push(currentMessage);
+      format = 'A';
+    } else {
+      const m2 = line.match(patternB);
+      if (m2) {
+        match = m2;
+        format = 'B';
       }
-      
+    }
+    
+    if (match && format) {
+      // Fecha mensagem anterior
+      if (currentMessage) messages.push(currentMessage);
+
       const [, dateStr, timeStr, sender, content] = match;
-      const [day, month, year] = dateStr.split('/').map(Number);
+      const [day, month, y] = dateStr.split('/').map(Number);
+      const year = y < 100 ? 2000 + y : y;
       const [hour, minute, second = 0] = timeStr.split(':').map(Number);
       
-      // JavaScript Date usa meses 0-11, então month - 1
       const date = new Date(year, month - 1, day, hour, minute, second || 0);
-      
+
       currentMessage = {
         date,
         sender: getNameFromPhone(sender.trim()),
         content: content.trim(),
       };
     } else if (currentMessage) {
-      // Linha de continuação de mensagem multilinhas
-      currentMessage.content += '\n' + trimmedLine;
+      // Continuação de mensagem multilinha
+      currentMessage.content += '\n' + line;
     }
   }
-  
-  // Salva a última mensagem
-  if (currentMessage) {
-    messages.push(currentMessage);
-  }
-  
+
+  if (currentMessage) messages.push(currentMessage);
+
   return messages;
 }
 
@@ -260,7 +268,10 @@ export function calculateStats(messages: Message[]): MessageStats {
   const dailyMessages: { [date: string]: { count: number; byPerson: { [person: string]: number }; messages: Message[] } } = {};
 
   messages.forEach((msg) => {
-    const dateStr = msg.date.toISOString().split('T')[0];
+    const year = msg.date.getFullYear();
+    const month = String(msg.date.getMonth() + 1).padStart(2, '0');
+    const day = String(msg.date.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`; // Usa data local, não UTC
     const hour = msg.date.getHours();
 
     // Messages per person
@@ -294,7 +305,10 @@ export function calculateStats(messages: Message[]): MessageStats {
   const hourlyCount: { [key: string]: { [person: string]: number } } = {};
   
   messages.forEach((msg) => {
-    const dateStr = msg.date.toISOString().split('T')[0];
+    const y = msg.date.getFullYear();
+    const m = String(msg.date.getMonth() + 1).padStart(2, '0');
+    const d = String(msg.date.getDate()).padStart(2, '0');
+    const dateStr = `${y}-${m}-${d}`; // data local
     const hour = msg.date.getHours();
     const key = `${dateStr}-${hour}`;
     

@@ -66,8 +66,11 @@ function groupMessagesByPeriod(
       const month = String(msg.date.getMonth() + 1).padStart(2, '0');
       key = `${year}-${month}`;
     } else {
-      // Agrupa por dia (YYYY-MM-DD)
-      key = msg.date.toISOString().split('T')[0];
+      // Agrupa por dia (YYYY-MM-DD) usando data local
+      const y = msg.date.getFullYear();
+      const m = String(msg.date.getMonth() + 1).padStart(2, '0');
+      const d = String(msg.date.getDate()).padStart(2, '0');
+      key = `${y}-${m}-${d}`;
     }
 
     if (!groups[key]) {
