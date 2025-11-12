@@ -197,15 +197,20 @@ export function parseWhatsAppChat(content: string): Message[] {
   const messages: Message[] = [];
   const lines = content.split('\n');
   
-  // Regex para formatos comuns do WhatsApp: [DD/MM/YYYY HH:MM:SS] ou DD/MM/YY, HH:MM -
-  const messageRegex = /^\[?(\d{1,2}\/\d{1,2}\/\d{2,4}),?\s+(\d{1,2}:\d{2}(?::\d{2})?)\]?\s*-?\s*([^:]+):\s*(.+)$/;
+  // Regex para formato WhatsApp: DD/MM/YYYY HH:MM - Sender: Content
+  // Aceita formatos como: 11/11/2025 06:48 - +55... ou 11/11/2025 06:48 - Nome:
+  const messageRegex = /^(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2}(?::\d{2})?)\s*-\s*([^:]+):\s*(.*)$/;
   
   let currentMessage: Message | null = null;
   
   for (const line of lines) {
-    const match = line.match(messageRegex);
+    const trimmedLine = line.trim();
+    if (!trimmedLine) continue;
+    
+    const match = trimmedLine.match(messageRegex);
     
     if (match) {
+      // Se tinha uma mensagem anterior, salva ela
       if (currentMessage) {
         messages.push(currentMessage);
       }
@@ -214,19 +219,21 @@ export function parseWhatsAppChat(content: string): Message[] {
       const [day, month, year] = dateStr.split('/').map(Number);
       const [hour, minute, second = 0] = timeStr.split(':').map(Number);
       
-      const fullYear = year < 100 ? 2000 + year : year;
-      const date = new Date(fullYear, month - 1, day, hour, minute, second);
+      // JavaScript Date usa meses 0-11, então month - 1
+      const date = new Date(year, month - 1, day, hour, minute, second || 0);
       
       currentMessage = {
         date,
         sender: getNameFromPhone(sender.trim()),
         content: content.trim(),
       };
-    } else if (currentMessage && line.trim()) {
-      currentMessage.content += '\n' + line;
+    } else if (currentMessage) {
+      // Linha de continuação de mensagem multilinhas
+      currentMessage.content += '\n' + trimmedLine;
     }
   }
   
+  // Salva a última mensagem
   if (currentMessage) {
     messages.push(currentMessage);
   }

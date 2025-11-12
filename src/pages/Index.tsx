@@ -7,6 +7,7 @@ import { BusiestDay } from '@/components/BusiestDay';
 import { FunnyMoments } from '@/components/FunnyMoments';
 import { DateFilter } from '@/components/DateFilter';
 import { UserFilter } from '@/components/UserFilter';
+import { RaceChart } from '@/components/RaceChart';
 import { parseWhatsAppChat, calculateStats, extractFunnyMoments, Message } from '@/utils/whatsappParser';
 import { MessageSquare, Users, Clock, TrendingUp } from 'lucide-react';
 
@@ -225,6 +226,10 @@ const Index = () => {
 
         <div className="mb-8">
           <FunnyMoments moments={stats.funnyMoments} />
+        </div>
+
+        <div className="mb-8">
+          <RaceChart messages={stats.messages} filterType={dateFilter} />
         </div>
       </div>
     </div>
