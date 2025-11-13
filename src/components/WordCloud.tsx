@@ -12,15 +12,15 @@ interface WordCloudProps {
   filterType: 'all' | 'currentMonth';
   periods: string[]; // canonical keys: YYYY-MM (all) or YYYY-MM-DD (currentMonth)
   range: [number, number];
-  dayIndex: number;
-  onDayChange: (index: number) => void;
+  dayRange: [number, number];
+  onDayRangeChange: (range: [number, number]) => void;
 }
 
 const STOP_WORDS = new Set([
   'a','o','e','é','de','da','do','em','um','uma','os','as','para','por','com','no','na','dos','das','ao','à','pelo','pela','se','que','ou','mas','quando','já','só','mais','não','também','muito','vai','vou','vc','q','n','aqui','lá','sim','então','bem','como','ela','ele','eu','tu','nós','esse','essa','isso','está','ser','ter','fazer','pode','vamos','foi','são','tem','tinha','https','www','com','br','http','mídia','oculta','grupo','usando','link','entrou','saiu','mudou','adicionou','removeu','criou','mensagem','apagada'
 ]);
 
-export function WordCloud({ messages, filterType, periods, range, dayIndex, onDayChange }: WordCloudProps) {
+export function WordCloud({ messages, filterType, periods, range, dayRange, onDayRangeChange }: WordCloudProps) {
   const { words, label, availableDays } = useMemo(() => {
     if (!messages.length || !periods.length) return { words: [], label: '' };
 
@@ -44,13 +44,20 @@ export function WordCloud({ messages, filterType, periods, range, dayIndex, onDa
       return false;
     });
 
-    // Filter by specific day if available
+    // Filter by day range if available
+    const [startDay, endDay] = dayRange;
+    const selectedDays = daysInRange.slice(
+      Math.max(0, startDay), 
+      Math.min(endDay + 1, daysInRange.length)
+    );
+    const selectedDaysSet = new Set(selectedDays);
+    
     const filtered = daysInRange.length > 0 
       ? filteredByRange.filter((m) => {
           const y = m.date.getFullYear();
           const mm = String(m.date.getMonth() + 1).padStart(2, '0');
           const dd = String(m.date.getDate()).padStart(2, '0');
-          return `${y}-${mm}-${dd}` === daysInRange[dayIndex];
+          return selectedDaysSet.has(`${y}-${mm}-${dd}`);
         })
       : filteredByRange;
 
@@ -74,14 +81,20 @@ export function WordCloud({ messages, filterType, periods, range, dayIndex, onDa
       .sort((a, b) => b.count - a.count)
       .slice(0, 60);
 
-    // Label do dia específico
-    const dayLabel = daysInRange.length > 0 ? (() => {
-      const [yy, mm, dd] = daysInRange[dayIndex].split('-');
-      return `${dd}/${mm}/${yy}`;
+    // Label do período
+    const dayLabel = daysInRange.length > 0 && selectedDays.length > 0 ? (() => {
+      if (selectedDays.length === 1) {
+        const [yy, mm, dd] = selectedDays[0].split('-');
+        return `${dd}/${mm}/${yy}`;
+      } else {
+        const [yy1, mm1, dd1] = selectedDays[0].split('-');
+        const [yy2, mm2, dd2] = selectedDays[selectedDays.length - 1].split('-');
+        return `${dd1}/${mm1}/${yy1} - ${dd2}/${mm2}/${yy2}`;
+      }
     })() : '';
 
     return { words: list, label: dayLabel, availableDays: daysInRange };
-  }, [messages, periods, range, filterType, dayIndex]);
+  }, [messages, periods, range, filterType, dayRange]);
 
   if (!words.length) {
     return (
@@ -146,16 +159,16 @@ export function WordCloud({ messages, filterType, periods, range, dayIndex, onDa
       {availableDays.length > 1 && (
         <div className="mb-4 px-2">
           <Slider
-            value={[dayIndex]}
-            onValueChange={([val]) => onDayChange(val)}
+            value={dayRange}
+            onValueChange={(values) => onDayRangeChange(values as [number, number])}
             min={0}
             max={availableDays.length - 1}
             step={1}
             className="w-full"
           />
           <div className="flex justify-between text-xs text-muted-foreground mt-1">
-            <span>{availableDays[0]?.split('-').reverse().join('/')}</span>
-            <span>{availableDays[availableDays.length - 1]?.split('-').reverse().join('/')}</span>
+            <span>{availableDays[dayRange[0]]?.split('-').reverse().join('/')}</span>
+            <span>{availableDays[dayRange[1]]?.split('-').reverse().join('/')}</span>
           </div>
         </div>
       )}

@@ -92,12 +92,12 @@ const Index = () => {
   }, [stats, dateFilter]);
 
   const [wordRange, setWordRange] = useState<[number, number]>([0, 0]);
-  const [wordDayIndex, setWordDayIndex] = useState<number>(0);
+  const [wordDayRange, setWordDayRange] = useState<[number, number]>([0, 0]);
   
   useEffect(() => {
     const maxIndex = Math.max(0, wordPeriods.length - 1);
     setWordRange([0, maxIndex]);
-    setWordDayIndex(0);
+    setWordDayRange([0, maxIndex]);
   }, [wordPeriods.length, dateFilter, userFilter]);
 
   const mostActiveRanking = useMemo(() => {
@@ -263,8 +263,8 @@ const Index = () => {
             filterType={dateFilter} 
             periods={wordPeriods} 
             range={wordRange}
-            dayIndex={wordDayIndex}
-            onDayChange={setWordDayIndex}
+            dayRange={wordDayRange}
+            onDayRangeChange={setWordDayRange}
           />
         </div>
       </div>
