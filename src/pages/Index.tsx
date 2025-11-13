@@ -92,9 +92,12 @@ const Index = () => {
   }, [stats, dateFilter]);
 
   const [wordRange, setWordRange] = useState<[number, number]>([0, 0]);
+  const [wordDayIndex, setWordDayIndex] = useState<number>(0);
+  
   useEffect(() => {
     const maxIndex = Math.max(0, wordPeriods.length - 1);
     setWordRange([0, maxIndex]);
+    setWordDayIndex(0);
   }, [wordPeriods.length, dateFilter, userFilter]);
 
   const mostActiveRanking = useMemo(() => {
@@ -255,7 +258,14 @@ const Index = () => {
         </div>
 
         <div className="mb-8">
-          <WordCloud messages={stats.messages} filterType={dateFilter} periods={wordPeriods} range={wordRange} />
+          <WordCloud 
+            messages={stats.messages} 
+            filterType={dateFilter} 
+            periods={wordPeriods} 
+            range={wordRange}
+            dayIndex={wordDayIndex}
+            onDayChange={setWordDayIndex}
+          />
         </div>
       </div>
     </div>
