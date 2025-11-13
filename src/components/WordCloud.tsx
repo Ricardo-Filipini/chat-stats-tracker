@@ -78,27 +78,47 @@ export function WordCloud({ messages, filterType, periods, range }: WordCloudPro
 
   const max = Math.max(...words.map((w) => w.count));
   const min = Math.min(...words.map((w) => w.count));
+  
+  // Escala de tamanho mais variada
   const scale = (c: number) => {
-    if (max === min) return 20;
+    if (max === min) return 24;
     const t = (c - min) / (max - min);
-    return Math.round(14 + t * 32); // 14px a 46px
+    return Math.round(16 + t * 48); // 16px a 64px
   };
 
-  // Gera ângulos e cores variadas para cada palavra
-  const getRotation = (index: number) => {
-    const angles = [-30, -15, 0, 15, 30];
-    return angles[index % angles.length];
+  // Embaralha palavras para misturar grandes e pequenas
+  const shuffledWords = useMemo(() => {
+    const sorted = [...words];
+    // Embaralha mantendo alguma estrutura
+    for (let i = sorted.length - 1; i > 0; i -= 2) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [sorted[i], sorted[j]] = [sorted[j], sorted[i]];
+    }
+    return sorted;
+  }, [words]);
+
+  // Rotações mais variadas incluindo horizontal (0°)
+  const getRotation = (index: number, count: number) => {
+    const angles = [0, 0, 0, -90, -90, -45, 45]; // mais palavras horizontais
+    const baseAngle = angles[index % angles.length];
+    // Palavras maiores ficam mais horizontais
+    return count > (max + min) / 2 ? 0 : baseAngle;
   };
 
-  const getColor = (index: number) => {
+  const getColor = (count: number) => {
+    const t = (count - min) / (max - min);
     const colors = [
-      'hsl(var(--primary))',
-      'hsl(var(--accent))',
       'hsl(var(--chart-1))',
       'hsl(var(--chart-2))',
       'hsl(var(--chart-3))',
+      'hsl(var(--chart-4))',
+      'hsl(var(--chart-5))',
+      'hsl(var(--primary))',
+      'hsl(var(--accent))',
     ];
-    return colors[index % colors.length];
+    // Palavras mais frequentes têm cores mais vibrantes
+    const idx = Math.floor(t * (colors.length - 1));
+    return colors[idx];
   };
 
   return (
@@ -107,19 +127,20 @@ export function WordCloud({ messages, filterType, periods, range }: WordCloudPro
         <h3 className="text-xl font-bold bg-gradient-accent bg-clip-text text-transparent">Nuvem de Palavras</h3>
         <p className="text-sm text-muted-foreground">Período: <span className="text-foreground font-medium">{label}</span></p>
       </div>
-      <div className="flex flex-wrap gap-3 justify-center items-center min-h-[300px]">
-        {words.map(({ word, count }, index) => (
+      <div className="flex flex-wrap gap-2 justify-center items-center min-h-[400px] p-4">
+        {shuffledWords.map(({ word, count }, index) => (
           <span
             key={word}
             title={`${count} ocorrências`}
-            className="select-none transition-all duration-300 hover:scale-110 cursor-default inline-block"
+            className="select-none transition-all duration-300 hover:scale-110 hover:z-10 cursor-default inline-block leading-none"
             style={{ 
               fontSize: `${scale(count)}px`, 
-              color: getColor(index),
-              transform: `rotate(${getRotation(index)}deg)`,
+              color: getColor(count),
+              transform: `rotate(${getRotation(index, count)}deg)`,
               fontWeight: count > (max + min) / 2 ? 700 : 500,
-              opacity: 0.85,
-              textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              opacity: 0.8 + (count / max) * 0.2,
+              textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+              padding: '2px 4px',
             }}
           >
             {word}

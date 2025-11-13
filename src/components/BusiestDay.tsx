@@ -8,11 +8,11 @@ interface BusiestDayProps {
 }
 
 export function BusiestDay({ date, count, topics }: BusiestDayProps) {
-  const formattedDate = new Date(date).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  });
+  // date está no formato YYYY-MM-DD, não usar new Date() para evitar problemas de timezone
+  const [year, month, day] = date.split('-');
+  const monthNames = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 
+                      'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  const formattedDate = `${day} de ${monthNames[parseInt(month) - 1]} de ${year}`;
 
   return (
     <Card className="p-6 bg-gradient-primary border-primary/50 backdrop-blur-sm shadow-glow">
