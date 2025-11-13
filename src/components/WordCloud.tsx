@@ -81,7 +81,24 @@ export function WordCloud({ messages, filterType, periods, range }: WordCloudPro
   const scale = (c: number) => {
     if (max === min) return 20;
     const t = (c - min) / (max - min);
-    return Math.round(14 + t * 28); // 14px a 42px
+    return Math.round(14 + t * 32); // 14px a 46px
+  };
+
+  // Gera ângulos e cores variadas para cada palavra
+  const getRotation = (index: number) => {
+    const angles = [-30, -15, 0, 15, 30];
+    return angles[index % angles.length];
+  };
+
+  const getColor = (index: number) => {
+    const colors = [
+      'hsl(var(--primary))',
+      'hsl(var(--accent))',
+      'hsl(var(--chart-1))',
+      'hsl(var(--chart-2))',
+      'hsl(var(--chart-3))',
+    ];
+    return colors[index % colors.length];
   };
 
   return (
@@ -90,13 +107,20 @@ export function WordCloud({ messages, filterType, periods, range }: WordCloudPro
         <h3 className="text-xl font-bold bg-gradient-accent bg-clip-text text-transparent">Nuvem de Palavras</h3>
         <p className="text-sm text-muted-foreground">Período: <span className="text-foreground font-medium">{label}</span></p>
       </div>
-      <div className="flex flex-wrap gap-3">
-        {words.map(({ word, count }) => (
+      <div className="flex flex-wrap gap-3 justify-center items-center min-h-[300px]">
+        {words.map(({ word, count }, index) => (
           <span
             key={word}
             title={`${count} ocorrências`}
-            className="select-none"
-            style={{ fontSize: `${scale(count)}px`, color: 'hsl(var(--accent))' }}
+            className="select-none transition-all duration-300 hover:scale-110 cursor-default inline-block"
+            style={{ 
+              fontSize: `${scale(count)}px`, 
+              color: getColor(index),
+              transform: `rotate(${getRotation(index)}deg)`,
+              fontWeight: count > (max + min) / 2 ? 700 : 500,
+              opacity: 0.85,
+              textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            }}
           >
             {word}
           </span>
