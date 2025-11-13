@@ -273,6 +273,11 @@ export function calculateStats(messages: Message[]): MessageStats {
     const day = String(msg.date.getDate()).padStart(2, '0');
     const dateStr = `${year}-${month}-${day}`; // Usa data local, não UTC
     const hour = msg.date.getHours();
+    
+    // Debug: log algumas mensagens de nov/2025
+    if (year === 2025 && month === '11' && (day === '10' || day === '11' || day === '12')) {
+      console.log(`Mensagem: ${dateStr} ${hour}:${msg.date.getMinutes()} - ${msg.sender}: ${msg.content.substring(0, 30)}`);
+    }
 
     // Messages per person
     stats.messagesPerPerson[msg.sender] = (stats.messagesPerPerson[msg.sender] || 0) + 1;
