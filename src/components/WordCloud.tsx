@@ -1,4 +1,5 @@
 import { Card } from '@/components/ui/card';
+import { Slider } from '@/components/ui/slider';
 import { useMemo } from 'react';
 
 export interface Message {
@@ -11,26 +12,47 @@ interface WordCloudProps {
   filterType: 'all' | 'currentMonth';
   periods: string[]; // canonical keys: YYYY-MM (all) or YYYY-MM-DD (currentMonth)
   range: [number, number];
+  dayIndex: number;
+  onDayChange: (index: number) => void;
 }
 
 const STOP_WORDS = new Set([
   'a','o','e','é','de','da','do','em','um','uma','os','as','para','por','com','no','na','dos','das','ao','à','pelo','pela','se','que','ou','mas','quando','já','só','mais','não','também','muito','vai','vou','vc','q','n','aqui','lá','sim','então','bem','como','ela','ele','eu','tu','nós','esse','essa','isso','está','ser','ter','fazer','pode','vamos','foi','são','tem','tinha','https','www','com','br','http','mídia','oculta','grupo','usando','link','entrou','saiu','mudou','adicionou','removeu','criou','mensagem','apagada'
 ]);
 
-export function WordCloud({ messages, filterType, periods, range }: WordCloudProps) {
-  const { words, label } = useMemo(() => {
+export function WordCloud({ messages, filterType, periods, range, dayIndex, onDayChange }: WordCloudProps) {
+  const { words, label, availableDays } = useMemo(() => {
     if (!messages.length || !periods.length) return { words: [], label: '' };
 
     const [start, end] = range;
     const selected = new Set(periods.slice(Math.max(0, start), Math.min(end, periods.length - 1) + 1));
 
-    const filtered = messages.filter((m) => {
+    // Get all days in the selected range
+    const daysInRange: string[] = [];
+    const filteredByRange = messages.filter((m) => {
       const y = m.date.getFullYear();
       const mm = String(m.date.getMonth() + 1).padStart(2, '0');
       const dd = String(m.date.getDate()).padStart(2, '0');
       const key = filterType === 'all' ? `${y}-${mm}` : `${y}-${mm}-${dd}`;
-      return selected.has(key);
+      if (selected.has(key)) {
+        const dayKey = `${y}-${mm}-${dd}`;
+        if (!daysInRange.includes(dayKey)) {
+          daysInRange.push(dayKey);
+        }
+        return true;
+      }
+      return false;
     });
+
+    // Filter by specific day if available
+    const filtered = daysInRange.length > 0 
+      ? filteredByRange.filter((m) => {
+          const y = m.date.getFullYear();
+          const mm = String(m.date.getMonth() + 1).padStart(2, '0');
+          const dd = String(m.date.getDate()).padStart(2, '0');
+          return `${y}-${mm}-${dd}` === daysInRange[dayIndex];
+        })
+      : filteredByRange;
 
     const counts = new Map<string, number>();
     filtered.forEach((msg) => {
@@ -52,20 +74,14 @@ export function WordCloud({ messages, filterType, periods, range }: WordCloudPro
       .sort((a, b) => b.count - a.count)
       .slice(0, 60);
 
-    // Label do período
-    const first = periods[Math.max(0, start)];
-    const last = periods[Math.min(end, periods.length - 1)];
-    const fmt = (p: string) => {
-      if (filterType === 'all') {
-        const [yy, mm] = p.split('-');
-        return `${mm}/${yy}`;
-      }
-      const [yy, mm, dd] = p.split('-');
+    // Label do dia específico
+    const dayLabel = daysInRange.length > 0 ? (() => {
+      const [yy, mm, dd] = daysInRange[dayIndex].split('-');
       return `${dd}/${mm}/${yy}`;
-    };
+    })() : '';
 
-    return { words: list, label: start === end ? fmt(first) : `${fmt(first)} – ${fmt(last)}` };
-  }, [messages, periods, range, filterType]);
+    return { words: list, label: dayLabel, availableDays: daysInRange };
+  }, [messages, periods, range, filterType, dayIndex]);
 
   if (!words.length) {
     return (
@@ -125,27 +141,47 @@ export function WordCloud({ messages, filterType, periods, range }: WordCloudPro
     <Card className="p-6 bg-gradient-card border-border/50 backdrop-blur-sm">
       <div className="mb-4">
         <h3 className="text-xl font-bold bg-gradient-accent bg-clip-text text-transparent">Nuvem de Palavras</h3>
-        <p className="text-sm text-muted-foreground">Período: <span className="text-foreground font-medium">{label}</span></p>
+        <p className="text-sm text-muted-foreground">Dia: <span className="text-foreground font-medium">{label}</span></p>
       </div>
-      <div className="flex flex-wrap gap-2 justify-center items-center min-h-[400px] p-4">
-        {shuffledWords.map(({ word, count }, index) => (
-          <span
-            key={word}
-            title={`${count} ocorrências`}
-            className="select-none transition-all duration-300 hover:scale-110 hover:z-10 cursor-default inline-block leading-none"
-            style={{ 
-              fontSize: `${scale(count)}px`, 
-              color: getColor(count),
-              transform: `rotate(${getRotation(index, count)}deg)`,
-              fontWeight: count > (max + min) / 2 ? 700 : 500,
-              opacity: 0.8 + (count / max) * 0.2,
-              textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
-              padding: '2px 4px',
-            }}
-          >
-            {word}
-          </span>
-        ))}
+      {availableDays.length > 1 && (
+        <div className="mb-4 px-2">
+          <Slider
+            value={[dayIndex]}
+            onValueChange={([val]) => onDayChange(val)}
+            min={0}
+            max={availableDays.length - 1}
+            step={1}
+            className="w-full"
+          />
+          <div className="flex justify-between text-xs text-muted-foreground mt-1">
+            <span>{availableDays[0]?.split('-').reverse().join('/')}</span>
+            <span>{availableDays[availableDays.length - 1]?.split('-').reverse().join('/')}</span>
+          </div>
+        </div>
+      )}
+      <div className="relative min-h-[500px] p-4 overflow-hidden">
+        <div className="absolute inset-0 flex flex-wrap justify-center items-center content-center gap-1 p-4">
+          {shuffledWords.map(({ word, count }, index) => (
+            <span
+              key={word}
+              title={`${count} ocorrências`}
+              className="select-none transition-all duration-200 hover:scale-110 hover:z-10 cursor-default inline-flex leading-tight"
+              style={{ 
+                fontSize: `${scale(count)}px`, 
+                color: getColor(count),
+                transform: `rotate(${getRotation(index, count)}deg)`,
+                fontWeight: count > (max + min) / 2 ? 700 : 500,
+                opacity: 0.85 + (count / max) * 0.15,
+                textShadow: '1px 1px 2px rgba(0,0,0,0.15)',
+                padding: '1px 2px',
+                margin: '0',
+                lineHeight: 1,
+              }}
+            >
+              {word}
+            </span>
+          ))}
+        </div>
       </div>
     </Card>
   );
