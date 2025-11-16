@@ -108,19 +108,20 @@ export function WordCloud({ messages, filterType, periods, range, dayRange, onDa
   const max = Math.max(...words.map((w) => w.count));
   const min = Math.min(...words.map((w) => w.count));
   
-  // Escala de tamanho mais suave para melhor encaixe
+  // Escala de tamanho mais agressiva e proporcional à frequência
   const scale = (c: number) => {
-    if (max === min) return 18;
+    if (max === min) return 20;
     const t = (c - min) / (max - min);
-    const exp = Math.pow(t, 0.6);
-    return Math.round(14 + exp * 48); // 14px a 62px
+    // Escala exponencial para maior variação
+    const exp = Math.pow(t, 0.8);
+    return Math.round(12 + exp * 60); // 12px a 72px (maior variação)
   };
 
-  // Embaralha palavras para misturar grandes e pequenas
+  // Embaralha palavras completamente para misturar grandes e pequenas
   const shuffledWords = useMemo(() => {
     const sorted = [...words];
-    // Embaralha mantendo alguma estrutura
-    for (let i = sorted.length - 1; i > 0; i -= 2) {
+    // Fisher-Yates shuffle para embaralhamento completo
+    for (let i = sorted.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [sorted[i], sorted[j]] = [sorted[j], sorted[i]];
     }
@@ -134,20 +135,29 @@ export function WordCloud({ messages, filterType, periods, range, dayRange, onDa
     return angles[index % angles.length];
   };
 
-  const getColor = (count: number) => {
-    const t = (count - min) / (max - min);
+  const getColor = (index: number, count: number) => {
+    // Paleta de cores vibrantes e variadas
     const colors = [
-      'hsl(var(--primary))',
-      'hsl(var(--chart-1))',
-      'hsl(var(--chart-2))',
-      'hsl(var(--accent))',
-      'hsl(var(--chart-3))',
-      'hsl(var(--chart-4))',
-      'hsl(var(--chart-5))',
+      'hsl(var(--primary))',        // Roxo
+      'hsl(var(--accent))',          // Ciano
+      'hsl(var(--chart-1))',         // Laranja
+      'hsl(var(--chart-2))',         // Verde
+      'hsl(var(--chart-4))',         // Amarelo
+      'hsl(var(--chart-5))',         // Coral
+      'hsl(var(--chart-3))',         // Azul escuro
+      'hsl(var(--primary-glow))',    // Roxo claro
+      'hsl(var(--accent-glow))',     // Ciano claro
+      'hsl(280 80% 65%)',            // Magenta
+      'hsl(340 75% 60%)',            // Rosa
+      'hsl(160 70% 50%)',            // Verde água
+      'hsl(45 85% 60%)',             // Dourado
+      'hsl(200 75% 55%)',            // Azul céu
     ];
-    // Palavras mais frequentes têm cores primárias
-    const idx = Math.floor(t * (colors.length - 1));
-    return colors[Math.min(idx, colors.length - 1)];
+    
+    // Distribui cores de forma variada, priorizando cores mais vibrantes para palavras mais frequentes
+    const t = (count - min) / (max - min);
+    const colorIndex = (index * 7 + Math.floor(t * 3)) % colors.length;
+    return colors[colorIndex];
   };
 
   return (
@@ -181,11 +191,11 @@ export function WordCloud({ messages, filterType, periods, range, dayRange, onDa
               className="select-none transition-all duration-300 hover:scale-110 hover:z-10 cursor-default inline-block whitespace-nowrap"
               style={{ 
                 fontSize: `${scale(count)}px`, 
-                color: getColor(count),
+                color: getColor(index, count),
                 transform: `rotate(${getRotation(index)}deg)`,
-                fontWeight: count > (max + min) / 2 ? 700 : 500,
-                opacity: 0.88,
-                textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+                fontWeight: count > (max + min) / 2 ? 800 : 600,
+                opacity: 0.92,
+                textShadow: '2px 2px 4px rgba(0,0,0,0.25)',
                 padding: '2px 6px',
                 margin: '0px 1px',
                 lineHeight: 0.9,
