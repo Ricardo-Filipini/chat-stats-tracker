@@ -79,7 +79,7 @@ export function WordCloud({ messages, filterType, periods, range, dayRange, onDa
     const list = Array.from(counts.entries())
       .map(([word, count]) => ({ word, count }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 60);
+      .slice(0, 150);
 
     // Label do período
     const dayLabel = daysInRange.length > 0 && selectedDays.length > 0 ? (() => {
@@ -108,11 +108,13 @@ export function WordCloud({ messages, filterType, periods, range, dayRange, onDa
   const max = Math.max(...words.map((w) => w.count));
   const min = Math.min(...words.map((w) => w.count));
   
-  // Escala de tamanho mais variada e suave
+  // Escala de tamanho com muito mais variação
   const scale = (c: number) => {
-    if (max === min) return 28;
+    if (max === min) return 20;
     const t = (c - min) / (max - min);
-    return Math.round(18 + t * 56); // 18px a 74px
+    // Escala exponencial para maior contraste
+    const exp = Math.pow(t, 0.7);
+    return Math.round(12 + exp * 72); // 12px a 84px
   };
 
   // Embaralha palavras para misturar grandes e pequenas
@@ -126,12 +128,11 @@ export function WordCloud({ messages, filterType, periods, range, dayRange, onDa
     return sorted;
   }, [words]);
 
-  // Rotações mais variadas incluindo horizontal (0°)
+  // Rotações principalmente 0° e 90° para melhor encaixe
   const getRotation = (index: number, count: number) => {
-    const angles = [0, 0, 0, -90, -90, -45, 45]; // mais palavras horizontais
-    const baseAngle = angles[index % angles.length];
-    // Palavras maiores ficam mais horizontais
-    return count > (max + min) / 2 ? 0 : baseAngle;
+    // 70% horizontal (0°), 30% vertical (90°)
+    const angles = [0, 0, 0, 0, 0, 0, 0, 90, 90, 90];
+    return angles[index % angles.length];
   };
 
   const getColor = (count: number) => {
@@ -172,23 +173,23 @@ export function WordCloud({ messages, filterType, periods, range, dayRange, onDa
           </div>
         </div>
       )}
-      <div className="relative min-h-[550px] p-6 overflow-hidden rounded-lg bg-gradient-to-br from-muted/30 to-background/50">
-        <div className="absolute inset-0 flex flex-wrap justify-center items-center content-center gap-2 p-6">
+      <div className="relative min-h-[600px] p-4 overflow-hidden rounded-lg bg-gradient-to-br from-muted/30 to-background/50">
+        <div className="absolute inset-0 flex flex-wrap justify-center items-center content-center gap-0.5 p-3">
           {shuffledWords.map(({ word, count }, index) => (
             <span
               key={word}
               title={`${count} ocorrências`}
-              className="select-none transition-all duration-300 hover:scale-110 hover:z-10 cursor-default inline-flex leading-tight"
+              className="select-none transition-all duration-300 hover:scale-110 hover:z-10 cursor-default inline-flex items-center justify-center"
               style={{ 
                 fontSize: `${scale(count)}px`, 
                 color: getColor(count),
                 transform: `rotate(${getRotation(index, count)}deg)`,
-                fontWeight: count > (max + min) / 2 ? 700 : 600,
-                opacity: 0.88 + (count / max) * 0.12,
-                textShadow: '2px 2px 4px rgba(0,0,0,0.2)',
-                padding: '2px 4px',
-                margin: '1px',
-                lineHeight: 1.1,
+                fontWeight: count > (max + min) / 2 ? 800 : 500,
+                opacity: 0.85 + (count / max) * 0.15,
+                textShadow: '2px 2px 4px rgba(0,0,0,0.25)',
+                padding: '1px 3px',
+                margin: '0px',
+                lineHeight: 1,
               }}
             >
               {word}
