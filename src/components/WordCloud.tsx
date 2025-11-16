@@ -17,7 +17,7 @@ interface WordCloudProps {
 }
 
 const STOP_WORDS = new Set([
-  'a','o','e','é','de','da','do','em','um','uma','os','as','para','por','com','no','na','dos','das','ao','à','pelo','pela','se','que','ou','mas','quando','já','só','mais','não','também','muito','vai','vou','vc','q','n','aqui','lá','sim','então','bem','como','ela','ele','eu','tu','nós','esse','essa','isso','está','ser','ter','fazer','pode','vamos','foi','são','tem','tinha','https','www','com','br','http','mídia','oculta','grupo','usando','link','entrou','saiu','mudou','adicionou','removeu','criou','mensagem','apagada'
+  'a','o','e','é','de','da','do','em','um','uma','os','as','para','por','com','no','na','dos','das','ao','à','pelo','pela','se','que','ou','mas','quando','já','só','mais','não','também','muito','vai','vou','vc','q','n','aqui','lá','sim','então','bem','como','ela','ele','eu','tu','nós','esse','essa','isso','está','ser','ter','fazer','pode','vamos','foi','são','tem','tinha','https','www','com','br','http','mídia','oculta','grupo','usando','link','entrou','saiu','mudou','adicionou','removeu','criou','mensagem','apagada','editada'
 ]);
 
 export function WordCloud({ messages, filterType, periods, range, dayRange, onDayRangeChange }: WordCloudProps) {
@@ -108,11 +108,11 @@ export function WordCloud({ messages, filterType, periods, range, dayRange, onDa
   const max = Math.max(...words.map((w) => w.count));
   const min = Math.min(...words.map((w) => w.count));
   
-  // Escala de tamanho mais variada
+  // Escala de tamanho mais variada e suave
   const scale = (c: number) => {
-    if (max === min) return 24;
+    if (max === min) return 28;
     const t = (c - min) / (max - min);
-    return Math.round(16 + t * 48); // 16px a 64px
+    return Math.round(18 + t * 56); // 18px a 74px
   };
 
   // Embaralha palavras para misturar grandes e pequenas
@@ -137,17 +137,17 @@ export function WordCloud({ messages, filterType, periods, range, dayRange, onDa
   const getColor = (count: number) => {
     const t = (count - min) / (max - min);
     const colors = [
+      'hsl(var(--primary))',
       'hsl(var(--chart-1))',
       'hsl(var(--chart-2))',
+      'hsl(var(--accent))',
       'hsl(var(--chart-3))',
       'hsl(var(--chart-4))',
       'hsl(var(--chart-5))',
-      'hsl(var(--primary))',
-      'hsl(var(--accent))',
     ];
-    // Palavras mais frequentes têm cores mais vibrantes
+    // Palavras mais frequentes têm cores primárias
     const idx = Math.floor(t * (colors.length - 1));
-    return colors[idx];
+    return colors[Math.min(idx, colors.length - 1)];
   };
 
   return (
@@ -172,23 +172,23 @@ export function WordCloud({ messages, filterType, periods, range, dayRange, onDa
           </div>
         </div>
       )}
-      <div className="relative min-h-[500px] p-4 overflow-hidden">
-        <div className="absolute inset-0 flex flex-wrap justify-center items-center content-center gap-1 p-4">
+      <div className="relative min-h-[550px] p-6 overflow-hidden rounded-lg bg-gradient-to-br from-muted/30 to-background/50">
+        <div className="absolute inset-0 flex flex-wrap justify-center items-center content-center gap-2 p-6">
           {shuffledWords.map(({ word, count }, index) => (
             <span
               key={word}
               title={`${count} ocorrências`}
-              className="select-none transition-all duration-200 hover:scale-110 hover:z-10 cursor-default inline-flex leading-tight"
+              className="select-none transition-all duration-300 hover:scale-110 hover:z-10 cursor-default inline-flex leading-tight"
               style={{ 
                 fontSize: `${scale(count)}px`, 
                 color: getColor(count),
                 transform: `rotate(${getRotation(index, count)}deg)`,
-                fontWeight: count > (max + min) / 2 ? 700 : 500,
-                opacity: 0.85 + (count / max) * 0.15,
-                textShadow: '1px 1px 2px rgba(0,0,0,0.15)',
-                padding: '1px 2px',
-                margin: '0',
-                lineHeight: 1,
+                fontWeight: count > (max + min) / 2 ? 700 : 600,
+                opacity: 0.88 + (count / max) * 0.12,
+                textShadow: '2px 2px 4px rgba(0,0,0,0.2)',
+                padding: '2px 4px',
+                margin: '1px',
+                lineHeight: 1.1,
               }}
             >
               {word}
