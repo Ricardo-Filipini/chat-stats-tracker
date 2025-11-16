@@ -108,13 +108,12 @@ export function WordCloud({ messages, filterType, periods, range, dayRange, onDa
   const max = Math.max(...words.map((w) => w.count));
   const min = Math.min(...words.map((w) => w.count));
   
-  // Escala de tamanho com muito mais variação
+  // Escala de tamanho mais suave para melhor encaixe
   const scale = (c: number) => {
-    if (max === min) return 20;
+    if (max === min) return 18;
     const t = (c - min) / (max - min);
-    // Escala exponencial para maior contraste
-    const exp = Math.pow(t, 0.7);
-    return Math.round(12 + exp * 72); // 12px a 84px
+    const exp = Math.pow(t, 0.6);
+    return Math.round(14 + exp * 48); // 14px a 62px
   };
 
   // Embaralha palavras para misturar grandes e pequenas
@@ -128,10 +127,10 @@ export function WordCloud({ messages, filterType, periods, range, dayRange, onDa
     return sorted;
   }, [words]);
 
-  // Rotações principalmente horizontais (0°), com poucas verticais
+  // Rotações variadas para melhor encaixe
   const getRotation = (index: number) => {
-    // 85% horizontal (0°), 15% vertical (90°)
-    const angles = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 90, 90, 90];
+    // 60% horizontal, 40% vertical para melhor compactação
+    const angles = [0, 0, 0, 0, 0, 0, 90, 90, 90, 90];
     return angles[index % angles.length];
   };
 
@@ -173,8 +172,8 @@ export function WordCloud({ messages, filterType, periods, range, dayRange, onDa
           </div>
         </div>
       )}
-      <div className="relative min-h-[600px] p-8 overflow-hidden rounded-lg bg-gradient-to-br from-muted/30 to-background/50">
-        <div className="flex flex-wrap justify-center items-center content-center gap-2 p-4 leading-relaxed">
+      <div className="relative min-h-[500px] overflow-hidden rounded-lg bg-gradient-to-br from-muted/30 to-background/50 flex items-center justify-center p-6">
+        <div className="flex flex-wrap justify-center items-center content-center gap-0 leading-tight max-w-full" style={{ lineHeight: 0.95 }}>
           {shuffledWords.map(({ word, count }, index) => (
             <span
               key={word}
@@ -184,12 +183,12 @@ export function WordCloud({ messages, filterType, periods, range, dayRange, onDa
                 fontSize: `${scale(count)}px`, 
                 color: getColor(count),
                 transform: `rotate(${getRotation(index)}deg)`,
-                fontWeight: count > (max + min) / 2 ? 800 : 600,
-                opacity: 0.9,
-                textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
-                padding: '4px 8px',
-                margin: '2px 4px',
-                lineHeight: 1.2,
+                fontWeight: count > (max + min) / 2 ? 700 : 500,
+                opacity: 0.88,
+                textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+                padding: '2px 6px',
+                margin: '0px 1px',
+                lineHeight: 0.9,
               }}
             >
               {word}
