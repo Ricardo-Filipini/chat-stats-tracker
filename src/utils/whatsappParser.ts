@@ -99,6 +99,7 @@ const phoneToName: { [phone: string]: string } = {
   "+55 14 98106-2771": "João Marcos",
   "+55 62 8191-6067": "João Paulo Lima Gomes",
   "+55 18 99749-1856": "João Pedro Sussel",
+  "+55 31 9525-8667": "Josi",
   "+55 82 8123-5130": "Jose Augusto Silva",
   "+55 61 9667-7866": "Joshua",
   "+55 11 98361-4511": "Leonardo",
