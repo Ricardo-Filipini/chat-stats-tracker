@@ -128,10 +128,10 @@ export function WordCloud({ messages, filterType, periods, range, dayRange, onDa
     return sorted;
   }, [words]);
 
-  // Rotações principalmente 0° e 90° para melhor encaixe
-  const getRotation = (index: number, count: number) => {
-    // 70% horizontal (0°), 30% vertical (90°)
-    const angles = [0, 0, 0, 0, 0, 0, 0, 90, 90, 90];
+  // Rotações principalmente horizontais (0°), com poucas verticais
+  const getRotation = (index: number) => {
+    // 85% horizontal (0°), 15% vertical (90°)
+    const angles = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 90, 90, 90];
     return angles[index % angles.length];
   };
 
@@ -173,23 +173,23 @@ export function WordCloud({ messages, filterType, periods, range, dayRange, onDa
           </div>
         </div>
       )}
-      <div className="relative min-h-[600px] p-4 overflow-hidden rounded-lg bg-gradient-to-br from-muted/30 to-background/50">
-        <div className="absolute inset-0 flex flex-wrap justify-center items-center content-center gap-0.5 p-3">
+      <div className="relative min-h-[600px] p-8 overflow-hidden rounded-lg bg-gradient-to-br from-muted/30 to-background/50">
+        <div className="flex flex-wrap justify-center items-center content-center gap-2 p-4 leading-relaxed">
           {shuffledWords.map(({ word, count }, index) => (
             <span
               key={word}
               title={`${count} ocorrências`}
-              className="select-none transition-all duration-300 hover:scale-110 hover:z-10 cursor-default inline-flex items-center justify-center"
+              className="select-none transition-all duration-300 hover:scale-110 hover:z-10 cursor-default inline-block whitespace-nowrap"
               style={{ 
                 fontSize: `${scale(count)}px`, 
                 color: getColor(count),
-                transform: `rotate(${getRotation(index, count)}deg)`,
-                fontWeight: count > (max + min) / 2 ? 800 : 500,
-                opacity: 0.85 + (count / max) * 0.15,
-                textShadow: '2px 2px 4px rgba(0,0,0,0.25)',
-                padding: '1px 3px',
-                margin: '0px',
-                lineHeight: 1,
+                transform: `rotate(${getRotation(index)}deg)`,
+                fontWeight: count > (max + min) / 2 ? 800 : 600,
+                opacity: 0.9,
+                textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
+                padding: '4px 8px',
+                margin: '2px 4px',
+                lineHeight: 1.2,
               }}
             >
               {word}
