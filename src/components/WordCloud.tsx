@@ -178,34 +178,57 @@ export function WordCloud({ messages, filterType, periods, range, dayRange, onDa
   }, [words]);
 
   // Rotações variadas para melhor encaixe
-  const getRotation = (index: number) => {
-    // 60% horizontal, 40% vertical para melhor compactação
-    const angles = [0, 0, 0, 0, 0, 0, 90, 90, 90, 90];
-    return angles[index % angles.length];
+  const getRotation = (index: number, count: number) => {
+    // Palavras mais frequentes ficam horizontais, menos frequentes podem ter mais variação
+    const t = (count - min) / (max - min);
+    
+    if (t > 0.7) {
+      // Palavras muito frequentes: sempre horizontais
+      return 0;
+    } else if (t > 0.4) {
+      // Palavras médias: variação leve
+      const angles = [0, 0, 0, 0, 0, -15, 15, -10, 10];
+      return angles[index % angles.length];
+    } else {
+      // Palavras menos frequentes: mais variação para preencher espaços
+      const angles = [0, 0, 0, -20, 20, -30, 30, 90, -45, 45];
+      return angles[index % angles.length];
+    }
   };
 
   const getColor = (index: number, count: number) => {
-    // Paleta de cores vibrantes e variadas
+    // Paleta expandida com cores vibrantes e variadas
     const colors = [
-      'hsl(var(--primary))',        // Roxo
-      'hsl(var(--accent))',          // Ciano
-      'hsl(var(--chart-1))',         // Laranja
-      'hsl(var(--chart-2))',         // Verde
-      'hsl(var(--chart-4))',         // Amarelo
-      'hsl(var(--chart-5))',         // Coral
-      'hsl(var(--chart-3))',         // Azul escuro
-      'hsl(var(--primary-glow))',    // Roxo claro
-      'hsl(var(--accent-glow))',     // Ciano claro
-      'hsl(280 80% 65%)',            // Magenta
-      'hsl(340 75% 60%)',            // Rosa
-      'hsl(160 70% 50%)',            // Verde água
-      'hsl(45 85% 60%)',             // Dourado
-      'hsl(200 75% 55%)',            // Azul céu
+      'hsl(270 80% 65%)',            // Roxo vibrante
+      'hsl(180 75% 55%)',            // Ciano
+      'hsl(30 90% 60%)',             // Laranja forte
+      'hsl(140 70% 50%)',            // Verde esmeralda
+      'hsl(50 95% 55%)',             // Amarelo brilhante
+      'hsl(350 85% 60%)',            // Vermelho coral
+      'hsl(200 80% 55%)',            // Azul céu
+      'hsl(280 85% 70%)',            // Magenta claro
+      'hsl(330 80% 65%)',            // Rosa pink
+      'hsl(160 75% 50%)',            // Verde água
+      'hsl(45 90% 60%)',             // Dourado
+      'hsl(210 75% 60%)',            // Azul royal
+      'hsl(290 75% 60%)',            // Púrpura
+      'hsl(15 85% 60%)',             // Laranja queimado
+      'hsl(120 70% 50%)',            // Verde limão
+      'hsl(190 80% 55%)',            // Turquesa
+      'hsl(60 85% 55%)',             // Amarelo limão
+      'hsl(340 80% 60%)',            // Rosa intenso
+      'hsl(250 75% 65%)',            // Azul violeta
+      'hsl(170 70% 50%)',            // Ciano escuro
+      'hsl(35 90% 58%)',             // Âmbar
+      'hsl(300 80% 65%)',            // Fúcsia
+      'hsl(150 75% 50%)',            // Verde jade
+      'hsl(20 85% 60%)',             // Terracota
     ];
     
-    // Distribui cores de forma variada, priorizando cores mais vibrantes para palavras mais frequentes
+    // Distribui cores de forma mais aleatória e vibrante
     const t = (count - min) / (max - min);
-    const colorIndex = (index * 7 + Math.floor(t * 3)) % colors.length;
+    // Usa hash do índice + frequência para distribuição mais única
+    const colorIndex = (index * 13 + Math.floor(t * 7) + Math.floor(count * 3)) % colors.length;
     return colors[colorIndex];
   };
 
@@ -231,28 +254,48 @@ export function WordCloud({ messages, filterType, periods, range, dayRange, onDa
           </div>
         </div>
       )}
-      <div className="relative min-h-[500px] overflow-hidden rounded-lg bg-gradient-to-br from-muted/30 to-background/50 flex items-center justify-center p-6">
-        <div className="flex flex-wrap justify-center items-center content-center gap-0 leading-tight max-w-full" style={{ lineHeight: 0.95 }}>
-          {shuffledWords.map(({ word, count }, index) => (
-            <span
-              key={word}
-              title={`${count} ocorrências`}
-              className="select-none transition-all duration-300 hover:scale-110 hover:z-10 cursor-default inline-block whitespace-nowrap"
-              style={{ 
-                fontSize: `${scale(count)}px`, 
-                color: getColor(index, count),
-                transform: `rotate(${getRotation(index)}deg)`,
-                fontWeight: count > (max + min) / 2 ? 800 : 600,
-                opacity: 0.92,
-                textShadow: '2px 2px 4px rgba(0,0,0,0.25)',
-                padding: '2px 6px',
-                margin: '0px 1px',
-                lineHeight: 0.9,
-              }}
-            >
-              {word}
-            </span>
-          ))}
+      <div className="relative min-h-[500px] overflow-hidden rounded-lg bg-gradient-to-br from-muted/30 to-background/50 flex items-center justify-center p-4">
+        <div className="flex flex-wrap justify-center items-center content-center gap-1 max-w-full" style={{ lineHeight: 1 }}>
+          {shuffledWords.map(({ word, count }, index) => {
+            const size = scale(count);
+            const rotation = getRotation(index, count);
+            // Padding dinâmico baseado no tamanho para melhor encaixe
+            const dynamicPadding = size > 50 ? '3px 8px' : size > 30 ? '2px 6px' : '1px 4px';
+            const dynamicMargin = size > 50 ? '1px 2px' : '0px 1px';
+            
+            return (
+              <span
+                key={word}
+                title={`${count} ocorrências`}
+                className="select-none transition-all duration-300 hover:scale-125 hover:z-20 hover:drop-shadow-2xl cursor-pointer inline-block whitespace-nowrap animate-in fade-in zoom-in"
+                style={{ 
+                  fontSize: `${size}px`, 
+                  color: getColor(index, count),
+                  transform: `rotate(${rotation}deg)`,
+                  fontWeight: count > (max + min) / 2 ? 800 : 600,
+                  opacity: 0.95,
+                  textShadow: '2px 2px 6px rgba(0,0,0,0.3), 0 0 20px currentColor',
+                  padding: dynamicPadding,
+                  margin: dynamicMargin,
+                  lineHeight: 1,
+                  animationDelay: `${index * 10}ms`,
+                  animationDuration: '400ms',
+                }}
+                onClick={() => {
+                  // Destaca a palavra com uma animação
+                  const el = document.querySelector(`[title="${count} ocorrências"]`) as HTMLElement;
+                  if (el) {
+                    el.style.filter = 'brightness(1.5) contrast(1.2)';
+                    setTimeout(() => {
+                      el.style.filter = '';
+                    }, 500);
+                  }
+                }}
+              >
+                {word}
+              </span>
+            );
+          })}
         </div>
       </div>
     </Card>
